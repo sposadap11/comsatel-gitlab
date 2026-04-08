@@ -1,3 +1,5 @@
+[[_TOC_]]
+
 # Arquitectura para Analítica de Datos (BI) - Comsatel
 
 ## 1. Introducción y Arquitectura de Referencia
@@ -44,20 +46,178 @@ La arquitectura lógica implementa el patrón **Medallion** (Bronce-Plata-Oro) p
 ![Arquitectura de Componentes Físicos](images/componentes-software-arquitectura-analitica.png)
 
 **Componentes Principales:**
-- **Data Sources**: Sistemas transaccionales origen (ERP, CRM, APIs, IoT)
-- **Data Storage**: Almacenamiento intermedio y final (Data Lake, Data Warehouse)
-- **Data Processing**: Motores de transformación batch/streaming
-- **Semantic Layer**: Apache Superset para modelado semántico y visualización
-- **ML/AI Engine**: H2O para machine learning e inteligencia artificial
+
+| Componente | Tecnología | Función |
+|------------|-----------|----------|
+| **Data Sources** | ERP, CRM, APIs, IoT | Sistemas transaccionales origen |
+| **Data Storage** | Data Lake, Data Warehouse | Almacenamiento intermedio y final |
+| **Data Processing** | Batch/Streaming Engines | Motores de transformación |
+| **Semantic Layer** | **Apache Superset** | **Plataforma central de modelado semántico y visualización** |
+| **ML/AI Engine** | H2O | Machine learning e inteligencia artificial |
+
+**Nota Estratégica:** Apache Superset es la **herramienta principal** de Comsatel para Business Intelligence, actuando como capa semántica unificada entre los datos procesados y los usuarios de negocio.
 
 ---
-## 3. Ciclo de Vida del Proyecto BI - Hitos Fundamentales
+
+## 3. Apache Superset - Plataforma Central de BI
+
+### 3.1 Visión Estratégica de Superset en Comsatel
+
+**Apache Superset** es la **plataforma oficial y estratégica** de Inteligencia de Negocios en Comsatel. Su adopción responde a la necesidad de una solución enterprise-grade, open-source, escalable y con capacidades avanzadas de visualización.
+
+**Ventajas Competitivas:**
+
+| Característica | Beneficio para Comsatel |
+|---------------|------------------------|
+| **Open-Source** | Sin costos de licenciamiento, comunidad activa, transparencia total |
+| **Multi-Database** | Conecta con MySQL, PostgreSQL, Oracle, SQL Server, BigQuery, etc. |
+| **Semantic Layer** | Capa de abstracción que traduce datos técnicos a lenguaje de negocio |
+| **Security Enterprise** | RLS (Row Level Security), integración LDAP/SSO, roles granulares |
+| **Performance** | Caché inteligente, consultas optimizadas, soporte para grandes volúmenes |
+| **Self-Service BI** | Usuarios de negocio pueden explorar datos sin dependencia de TI |
+| **Extensibilidad** | Plugins personalizados, APIs REST, integración con ecosistema Python |
+
+**Posicionamiento Arquitectónico:**
+
+Superset se ubica como la **capa semántica única** entre la Capa Oro (datos preparados) y los usuarios finales, garantizando:
+- **Una sola fuente de verdad** para métricas de negocio
+- **Gobernanza centralizada** de accesos y permisos
+- **Estandarización** de visualizaciones y dashboards
+- **Escalabilidad** para cientos de usuarios concurrentes
+
+![Superset Analytics Solution](uploads/b9c947af129176f4acfb9c8dde575c6e/image.png)
+
+### 3.2 Capacidades Core de Apache Superset
+
+#### 3.2.1 SQL Lab - Entorno de Desarrollo SQL
+
+**Propósito:** IDE SQL integrado para exploración, prototipado y creación de datasets virtuales.
+
+**Características Clave:**
+- Editor SQL con autocompletado y syntax highlighting
+- Ejecución de queries ad-hoc contra cualquier base conectada
+- Visualización rápida de resultados en tablas
+- Guardado de queries como **Virtual Datasets** (uso restringido, ver sección 4.2.1)
+- Exportación de resultados a CSV/Excel
+
+**Mejores Prácticas:**
+- Usar SQL Lab **exclusivamente** para prototipado rápido
+- No exponer Virtual Datasets directamente a usuarios de negocio
+- Migrar queries validados a Physical Datasets en Capa Oro
+
+#### 3.2.2 Datasets - Modelado Semántico
+
+**Definición:** Los Datasets son la representación semántica de tablas/vistas de la base de datos, con metadatos enriquecidos para usuarios de negocio.
+
+**Tipos de Datasets:**
+
+| Tipo | Descripción | Uso Recomendado |
+|------|-------------|------------------|
+| **Physical Dataset** | Apunta directamente a tabla/vista materializada en BD | **Prioritario**. Máximo performance, caché eficiente |
+| **Virtual Dataset** | Query SQL dinámica ejecutada en tiempo real | Prototipado, filtros Jinja paramétricos |
+
+**Elementos Configurables en Datasets:**
+
+1. **Columnas (Columns):**
+   - Label descriptivo (traducción de nombres técnicos)
+   - Tipo de dato (string, number, datetime, boolean)
+   - Visibilidad (mostrar/ocultar al usuario)
+   - Agrupable (GROUP BY habilitado)
+   - Filtrable (WHERE clause habilitado)
+
+2. **Métricas (Metrics):**
+   - Fórmulas predefinidas (SUM, AVG, COUNT, DISTINCT COUNT)
+   - Expresiones SQL personalizadas
+   - Formateo (moneda, porcentaje, decimales)
+   - Descripción documentada para usuarios
+
+3. **Filtros Avanzados:**
+   - Temporal Time Range (rangos de fecha dinámicos)
+   - Jinja Templating (filtros paramétricos con variables de sesión)
+   - Custom SQL WHERE clauses
+
+**Ejemplo de Configuración de Métrica:**
+
+```sql
+-- Nombre: Ventas Netas Totales
+-- Expresión: SUM(monto_neto)
+-- Formateo: Currency ($)
+-- Descripción: Suma total de ventas netas después de devoluciones e impuestos
+```
+
+#### 3.2.3 Charts - Visualizaciones Interactivas
+
+**Catálogo de Visualizaciones Soportadas:**
+
+| Categoría | Tipos Disponibles | Caso de Uso |
+|-----------|------------------|-------------|
+| **KPIs** | Big Number, Big Number with Trendline | Métricas consolidadas |
+| **Barras** | Bar Chart, Horizontal Bar, Stacked Bar | Comparativas categóricas |
+| **Líneas** | Line Chart, Area Chart, Step Line | Tendencias temporales |
+| **Tortas** | Pie Chart, Donut Chart, Rose Chart | Distribución porcentual |
+| **Tablas** | Table, Pivot Table, Heatmap | Detalles granulares |
+| **Geográficas** | Mapbox, Deck.gl, Country Map | Análisis por ubicación |
+| **Avanzadas** | Treemap, Sunburst, Sankey, Word Cloud | Composición jerárquica |
+
+**Configuración Estándar de Charts en Comsatel:**
+
+- **Título descriptivo** en lenguaje de negocio
+- **Tooltips informativos** con contexto adicional
+- **Leyendas claras** sin invadir el gráfico
+- **Colores corporativos** (verde/azul positivo, rojo/naranja alerta)
+- **Interactividad habilitada** (cross-filtering obligatorio)
+
+#### 3.2.4 Dashboards - Consolidación de Insights
+
+**Definición:** Los Dashboards agrupan múltiples charts en una vista unificada con filtros globales y cross-filtering.
+
+**Estándar de Diseño - Patrón en Z:**
+
+![Dashboard Example](uploads/50b751fe09ba3f5bb6fa0fb220cd0313/image.png)
+
+| Zona | Contenido | Objetivo |
+|------|-----------|----------|
+| **Superior (20%)** | Big Numbers + KPIs críticos | Lectura inmediata del estado |
+| **Central (60%)** | Gráficos de análisis (barras, líneas, treemaps) | Exploración de tendencias |
+| **Inferior (20%)** | Tablas detalladas | Drill-down y exportación |
+
+**Funcionalidades Avanzadas de Dashboards:**
+
+1. **Cross-Filtering (Filtros Cruzados):**
+   - Clic en un elemento de un chart filtra TODOS los demás charts
+   - Propagación instantánea en cascada
+   - **Obligatorio** en todos los dashboards productivos
+
+2. **Filtros Globales (Native Filters):**
+   - Selectores de fecha, región, categoría aplicables a todo el dashboard
+   - Persistencia de filtros en URL (compartible)
+   - Valores por defecto configurables
+
+3. **Tabs y Layout Dinámico:**
+   - Organización en pestañas temáticas
+   - Drag-and-drop para reorganizar charts
+   - Responsive design (desktop, tablet, mobile)
+
+4. **Exportación y Compartir:**
+   - Download charts como PNG/SVG
+   - Export data a CSV/Excel
+   - Share dashboard URL con permisos específicos
+   - Embed dashboards en aplicaciones externas (iframe)
+
+5. **Alertas y Reportes Programados:**
+   - Alertas por email cuando métricas superan umbrales
+   - Reportes PDF programados (diario, semanal, mensual)
+   - Suscripción de usuarios a dashboards específicos
+
+---
+
+## 4. Ciclo de Vida del Proyecto BI 
 
 Todo proyecto analítico en Comsatel debe estructurarse obligatoriamente en los siguientes hitos, garantizando control temporal, asignación de responsables e identificación de ruta crítica.
 
-### 3.1 HITO 1: Definición de Arquitectura Base y Lanzamiento
+### 3.1 Definición de Arquitectura Base y Lanzamiento
 
-#### 3.1.1 T0.0 - Arquitectura de Documentación BI para Levantamiento de Proyectos
+#### 3.1.1 Arquitectura de Documentación BI para Levantamiento de Proyectos
 
 **Descripción:** Establecimiento de la documentación base que guiará todo el ciclo de vida del proyecto, incluyendo templates, checklists y estándares de nomenclatura.
 
@@ -66,7 +226,7 @@ Todo proyecto analítico en Comsatel debe estructurarse obligatoriamente en los 
 - Checklists de validación por fase
 - Estándares de nomenclatura para artefactos
 
-#### 3.1.2 T0.1 - Daily Meeting: Sincronización y Desbloqueo Técnico (Recurrente)
+#### 3.1.2 Daily Meeting: Sincronización y Desbloqueo Técnico (Recurrente)
 
 **Descripción:** Ceremonia diaria de máximo 15 minutos para sincronización del equipo.
 
@@ -79,7 +239,7 @@ Todo proyecto analítico en Comsatel debe estructurarse obligatoriamente en los 
 **Frecuencia:** Diaria (días hábiles)  
 **Participantes:** Equipo técnico completo
 
-#### 3.1.3 T1.1 - Implementación de Templates Globales de Issues en GitLab
+#### 3.1.3 Implementación de Templates Globales de Issues en GitLab
 
 **Descripción:** Estandarización de la creación de tareas técnicas en GitLab para garantizar uniformidad y trazabilidad.
 
@@ -202,13 +362,18 @@ Definir cómo se realizará el procesamiento para preparar datos para análisis:
 
 ---
 
-### 3.4 Desarrollo de Dashboards Operativos (Caso Real)
+### 4.4 Desarrollo de Dashboards Operativos en Superset
 
-#### 3.4.1 Configuración de Capa Semántica y Estándares UI/UX en Superset
+#### 4.4.1 Configuración de Capa Semántica y Estándares UI/UX en Superset
 
 **Descripción:** Configuración de la capa semántica y aplicación de estándares de diseño en Apache Superset.
 
-##### 3.4.1.1 Estándares para Datasets en Superset
+##### 4.4.1.1 Estándares para Datasets en Superset
+
+**Importancia Estratégica:** La correcta configuración de Datasets en Superset es **crítica** para el éxito del proyecto. Un Dataset mal configurado genera:
+- Consultas lentas que degradan la experiencia de usuario
+- Métricas inconsistentes que generan desconfianza en el negocio
+- Dificultad de mantenimiento y evolución del dashboard
 
 **Physical Datasets vs Virtual Datasets:**
 
@@ -219,23 +384,59 @@ Definir cómo se realizará el procesamiento para preparar datos para análisis:
 
 **Traducción Semántica (MANDATORIO):**
 
-**Regla:** Los usuarios de negocio NO deben ver lenguaje de máquina. Todo campo debe poseer etiqueta descriptiva (Label).
+**Regla de Oro:** Los usuarios de negocio NUNCA deben ver nombres técnicos de columnas. Todo campo debe tener una etiqueta descriptiva en lenguaje de negocio.
 
-| Estado | Ejemplo Código | Ejemplo Label Requerido |
-|--------|---------------|------------------------|
-| ❌ Inaceptable | `mnt_tot_vta_01` | - |
-| ✅ Exigido | - | `Monto Total de Ventas` |
-| ❌ Inaceptable | `flg_act` | - |
-| ✅ Exigido | - | `Estado Activo` |
+**Proceso de Traducción Semántica en Superset:**
 
-##### 3.4.1.2 Definición de Métricas y Dimensiones
+1. Ir a **Datasets → [Nombre Dataset] → Edit**
+2. Pestaña **Columns**
+3. Para cada columna técnica, completar:
+   - **Verbose Name**: Label amigable (ej: "Monto Total de Ventas")
+   - **Description**: Explicación del significado (tooltip)
+   - **Filterable**: Yes/No (¿puede usarse en filtros?)
+   - **Groupable**: Yes/No (¿puede agruparse en charts?)
+   - **Visible**: Yes/No (¿mostrar al usuario final?)
 
-**Requisitos:**
-- Crear métricas nativas guardadas en pestaña Metrics del Dataset (ej: `SUM(monto_neto)`)
-- Formatear tipo de moneda (añadir prefijo "$")
-- Limpiar interfaz del explorador: desactivar visibilidad de campos técnicos/IDs de sistema que generan confusión
+**Ejemplos de Traducción:
 
-##### 3.4.1.3 UI/UX y Diseño de Dashboards
+| Columna Técnica | Label Requerido | Descripción (Tooltip) |
+|----------------|----------------|----------------------|
+| `mnt_tot_vta_01` | Monto Total de Ventas | Suma de ventas brutas antes de descuentos |
+| `flg_act` | Estado Activo | Indicador binario: 1=Activo, 0=Inactivo |
+| `fec_reg_ts` | Fecha de Registro | Timestamp de creación del registro (UTC) |
+| `cod_cli_fk` | Código de Cliente | ID único del cliente en sistema CRM |
+
+##### 4.4.1.2 Definición de Métricas y Dimensiones en Superset
+
+**Importancia:** Las métricas definidas en Superset son la **única fuente de verdad** para el negocio. Deben ser validadas rigurosamente antes de publicación.
+
+**Procedimiento para Crear Métricas:**
+
+1. Ir a **Datasets → [Nombre Dataset] → Edit → Metrics**
+2. Click en **+ Metric**
+3. Configurar:
+   - **Metric Name**: Nombre técnico (sin espacios, ej: `ventas_netas_total`)
+   - **Verbose Name**: Label amigable (ej: "Ventas Netas Totales")
+   - **Expression**: Fórmula SQL (ej: `SUM(monto_neto)`)
+   - **Metric Type**: Simple (agregación) o Python (lógica compleja)
+   - **D3 Format**: Formateo visual (ej: `$,.2f` para moneda)
+   - **Description**: Documentación de la fórmula y reglas de negocio
+   - **Extra**: JSON con configuraciones avanzadas (opcional)
+
+**Requisitos Obligatorios:**
+**Ejemplos de Métricas Estándar:**
+
+| Métrica | Expresión SQL | D3 Format | Descripción |
+|---------|--------------|-----------|-------------|
+| Ventas Brutas | `SUM(monto_bruto)` | `$,.2f` | Total ventas antes de descuentos |
+| Ventas Netas | `SUM(monto_neto)` | `$,.2f` | Ventas después de descuentos e impuestos |
+| Ticket Promedio | `AVG(monto_neto)` | `$,.2f` | Valor promedio por transacción |
+| Tasa Conversión | `COUNT(DISTINCT id_cliente) / COUNT(*) * 100` | `.2%` | Porcentaje de visitantes que compran |
+| Clientes Activos | `COUNT(DISTINCT CASE WHEN flg_act = 1 THEN id_cliente END)` | `,` | Clientes con estado activo |
+
+##### 4.4.1.3 UI/UX y Diseño de Dashboards en Superset
+
+**Guía de Diseño Visual en Superset:**
 
 **Jerarquía Visual (Patrón en Z):**
 
@@ -245,11 +446,15 @@ Definir cómo se realizará el procesamiento para preparar datos para análisis:
 | **Cuerpo Central** | Gráficos de tendencias y composición (barras, líneas, treemaps) | Análisis detallado |
 | **Franja Inferior** | Tablas de detalles granulares | Exportación y escrutinio contable |
 
-**Interactividad Cero-Fricción:**
-- **Requisito:** Obligatorio habilitar **Cross-Filtering** (filtros cruzados)
-- **Comportamiento:** Interacción en un gráfico debe propagarse en cascada hacia todo el Dashboard al instante
+**Interactividad Cero-Fricción en Superset:**
 
-**Estándar Cromático:**
+**Cross-Filtering (MANDATORIO):**
+- **Configuración:** En cada chart, activar opción "Emitir filtro cruzado"
+- **Comportamiento:** Clic en barra/segmento/punto filtra automáticamente todos los charts del dashboard
+- **Beneficio:** Exploración intuitiva sin necesidad de filtros manuales
+- **Validación QA:** Probar que todos los charts responden a interacciones
+
+**Estándar Cromático Corporativo:**
 - Utilizar paleta oficial de Comsatel
 - **Contraste lógico:** Verde/Azul para métricas positivas; Rojo/Naranja para mermas/alertas
 
@@ -257,163 +462,367 @@ Definir cómo se realizará el procesamiento para preparar datos para análisis:
 
 ![Dashboard Example](uploads/50b751fe09ba3f5bb6fa0fb220cd0313/image.png)
 
-##### 3.4.1.4 Herramientas de Visualización
+**Configuración de Colores en Superset:**
 
-**Apache Superset:**
-- Software open-source para visualización de datos
-- Admite múltiples bases de datos
-- Solución analítica principal de Comsatel
+1. Ir a **Settings → Feature Flags**
+2. Habilitar `ENABLE_TEMPLATE_PROCESSING`
+3. Definir paleta corporativa en CSS personalizado:
+   ```css
+   :root {
+     --color-positivo: #28a745;  /* Verde */
+     --color-negativo: #dc3545;  /* Rojo */
+     --color-alerta: #fd7e14;    /* Naranja */
+     --color-info: #007bff;      /* Azul */
+   }
+   ```
 
-![Superset Analytics Solution](uploads/b9c947af129176f4acfb9c8dde575c6e/image.png)
+##### 4.4.1.4 Optimización de Performance en Superset
 
-**H2O:**
-- Software open-source para machine learning e inteligencia artificial
-- Complemento para análisis predictivo avanzado
+**Estrategias de Optimización:**
+
+| Estrategia | Implementación | Impacto |
+|-----------|---------------|----------|
+| **Physical Datasets** | Usar tablas materializadas de Capa Oro | Reduce carga en BD transaccional |
+| **Caché de Queries** | Configurar Redis/Memcached como backend de caché | Respuestas <2s para queries repetidas |
+| **Pre-agregaciones** | Crear vistas resumidas en Capa Oro (daily, monthly) | Elimina cálculos en tiempo real |
+| **Índices en BD** | Asegurar índices en columnas de filtro/agrupación | Acelera execution plan |
+| **Limitar Datos** | Aplicar row limit en charts (ej: top 50 categorías) | Evita renderizado excesivo |
+| **Evitar Virtual Datasets** | Migrar a Physical Datasets siempre que sea posible | Performance consistente |
+
+**SLA de Performance:**
+- **Dashboard completo (cold cache):** <5 segundos
+- **Chart individual (con caché):** <2 segundos
+- **Filtros cruzados:** <1 segundo
+- **Exportación CSV (<10k rows):** <3 segundos
+
+**Monitoreo de Performance:**
+- Revisar logs de Superset en `/var/log/superset/`
+- Identificar queries lentas (>3s) en **SQL Lab → Query Search**
+- Optimizar gradualmente basándose en métricas reales de uso
 
 ---
 
-### 3.5 Gobernanza, Seguridad y QA
+### 4.5 Gobernanza, Seguridad y QA en Superset
 
-#### 3.5.1 Protocolo de QA y Matriz de Cuadratura de Datos
+#### 4.5.1 Protocolo de QA y Matriz de Cuadratura de Datos en Superset
 
 **Descripción:** El despliegue a Producción sin evidencia documentada de pruebas en GitLab es falta grave a la metodología operativa.
 
-**Matriz de Pruebas Obligatorias:**
+**Herramientas de QA en Superset:**
 
-**1. Pruebas de Cuadratura e Integridad (Cross-Validation)**
-- Disparar query directo a BD ERP/CRM origen (ej: `SELECT SUM(monto)`)
-- Comparar contra Big Number en Superset
-- **Tolerancia:** 0% de discrepancia
-- **Acción correctiva:** Si difiere, detener proceso y re-auditar JOINs en arquitectura
+**1. Validación de Métricas (Cross-Validation):**
+**Procedimiento en Superset:**
+   - Abrir chart en modo **Edit**
+   - Ver expresión SQL generada en pestaña **Query**
+   - Copiar query y ejecutar en SQL Lab contra BD origen
+   - Comparar resultado numérico exacto
+   - **Tolerancia:** 0% de discrepancia
+   - **Acción correctiva:** Si difiere, revisar JOINs y filtros en Dataset
 
-**2. Pruebas de Estrés y Rendimiento (Performance)**
-- Dashboard completo debe renderizar en frío (sin caché) en **<5 segundos**
-- **Acción correctiva:** Latencias mayores exigen regresar a Capa Oro para materializar agregaciones adicionales y optimizar índices
+**2. Pruebas de Estrés y Rendimiento (Performance en Superset):**
+**Metodología de Testing:**
+   - Limpiar caché: **Settings → Clear Cache**
+   - Abrir dashboard en ventana incógnito (sin sesión previa)
+   - Cronometrar tiempo hasta renderizado completo
+   - **SLA:** Dashboard completo en frío <5 segundos
+   - **Acción correctiva:** Si excede 5s, optimizar Dataset (ver sección 4.4.1.4)
 
-**3. Pruebas de Interfaz (UI)**
-- Validar tooltips
-- Legibilidad de ejes
-- Leyendas no deben invadir/deformar gráficos en pantallas estándar (14 pulgadas)
+**3. Pruebas de Interfaz (UI/UX en Superset):**
+**Checklist de Validación Visual:**
+   - Tooltips aparecen al hover con información contextual
+   - Ejes legibles (rotación automática si hay muchas categorías)
+   - Leyendas no invaden área de gráfico (máximo 15% del espacio)
+   - Responsive: dashboard usable en resolución 1366x768 (estándar corporativo)
+   - Cross-filtering funcional en todos los charts interactivos
+   - Paleta de colores cumple estándar corporativo
 
-#### 3.5.2 Implementación de Seguridad RLS y Roles en Superset
+#### 4.5.2 Implementación de Seguridad RLS y Roles en Superset
 
-**Descripción:** Aplicación del Principio de Mínimo Privilegio (PoLP) en toda configuración de permisos.
+**Marco de Seguridad de Superset en Comsatel:**
 
-##### 3.5.2.1 Gestión de Roles Personalizados
+Apache Superset proporciona un framework de seguridad enterprise-grade que debe configurarse rigurosamente para cumplir con políticas de gobierno de datos de Comsatel.
 
-**Restricción:** ❌ **Prohibido terminantemente** asignar roles nativos "Alpha" o "Gamma" a usuarios de negocio.
+##### 4.5.2.1 Gestión de Roles Personalizados en Superset
 
-**Roles Autorizados:**
+**Roles Nativos de Superset (NO USAR directamente):**
 
-| Rol | Permisos | Alcance |
-|-----|----------|----------|
-| **Creador_[Area]** | Tácticos. Puede usar SQL Lab y ensamblar Dashboards | Solo sobre Datasets físicos vinculados a su departamento autorizado |
-| **Visualizador_[Area]** | Corporativo masivo. Comando `can_view` exclusivamente | Tableros publicados. No puede editar, borrar ni ver consultas SQL |
+| Rol Nativo | Permisos | Estado en Comsatel |
+|-----------|----------|--------------------|
+| **Admin** | Acceso total, gestión de usuarios | ❌ Solo arquitectos de plataforma |
+| **Alpha** | Crear/editar dashboards, SQL Lab unrestricted | ❌ **PROHIBIDO** para usuarios de negocio |
+| **Gamma** | Solo visualizar dashboards publicados | ⚠️ Base para rol Visualizador personalizado |
+| **sql_lab** | Acceso a SQL Lab | ⚠️ Asignar solo a rol Creador |
 
-##### 3.5.2.2 Implementación de Row Level Security (RLS)
+**Roles Personalizados de Comsatel (CREAR OBLIGATORIAMENTE):**
 
-**Caso de Uso:** Dashboard consumido por múltiples jefes regionales con visibilidad segregada por confidencialidad.
+**Procedimiento para Crear Rol Personalizado:**
 
-**Procedimiento:**
+1. Ir a **Settings → List Roles → + Add Role**
+2. Nombre: `Creador_Operaciones` o `Visualizador_Ventas`
+3. Seleccionar permisos granulares:
+   - **Para Creador:** `can_edit on Dashboard`, `can_write on Dataset`, `can_sql_json on SqlLab`
+   - **Para Visualizador:** `can_view on Dashboard`, `can_read on Dataset`
+4. Asignar usuarios desde **Settings → List Users**
+5. Validar permisos con cuenta de test
 
-1. Ir a **Security → Row Level Security** en Superset
-2. Aplicar regla dinámica al Dataset maestro empleando variables de sesión:
+##### 4.5.2.2 Implementación de Row Level Security (RLS) en Superset
+
+**Qué es RLS:** Row Level Security filtra datos a nivel de fila basado en el usuario autenticado, garantizando que cada usuario vea SOLO los datos autorizados para su perfil.
+
+**Casos de Uso Típicos en Comsatel:**
+- Gerentes regionales ven solo datos de su región
+- Vendedores ven solo sus propias transacciones
+- Proveedores externos ven solo datos de sus contratos
+
+**Procedimiento Detallado para Configurar RLS:**
+
+**Paso 1: Crear Tabla de Mapeo de Accesos en BD**
 
 ```sql
-region_id = (SELECT id_region FROM dim_accesos WHERE email_usuario = '{{ current_username() }}')
+-- Crear tabla dim_accesos en esquema de BI
+CREATE TABLE dim_accesos (
+    email_usuario VARCHAR(255) PRIMARY KEY,
+    id_region INT,
+    id_departamento INT,
+    rol_bi VARCHAR(50)
+);
+
+-- Insertar mapeos
+INSERT INTO dim_accesos VALUES 
+('juan.perez@comsatel.com', 1, 10, 'Gerente Regional'),
+('maria.gomez@comsatel.com', 2, 20, 'Gerente Regional');
 ```
 
-##### 3.5.2.3 Integración y Auditoría
+**Paso 2: Configurar RLS en Superset**
 
-**Autenticación:** Nativa mediante directorio corporativo (**LDAP/SSO**) para blindaje perimetral
+1. Ir a **Security → Row Level Security Filters → + Add Filter**
+2. Completar campos:
+   - **Name**: `rls_region_por_usuario`
+   - **Description**: "Filtra datos por región basada en email de usuario"
+   - **Tables**: Seleccionar Dataset(s) afectados
+   - **Clause** (SQL):
+   ```sql
+   region_id = (
+       SELECT id_region 
+       FROM dim_accesos 
+       WHERE email_usuario = '{{ current_username() }}'
+   )
+   ```
+   - **Roles**: Asignar a roles que requieren este filtro (ej: `Visualizador_Ventas`)
+   - **Enabled**: ✅ Yes
 
-**Auditoría:**
-- Departamento de Arquitectura de Datos audita trimestralmente logs de acceso
-- Revocar inmediatamente permisos de usuarios inactivos >90 días
+3. Click en **Save**
 
-**Seguridad y Privacidad:**
+**Paso 3: Validar RLS**
+
+1. Login con usuario de test (ej: juan.perez@comsatel.com)
+2. Abrir dashboard afectado
+3. Verificar que solo muestra datos de región_id = 1
+4. Repetir con usuario de otra región para confirmar aislamiento
+
+##### 4.5.2.3 Integración LDAP/SSO y Auditoría en Superset
+
+**Autenticación Enterprise:**
+
+Superset se integra nativamente con el directorio corporativo de Comsatel mediante LDAP/SSO, eliminando la necesidad de credenciales separadas.
+
+**Configuración LDAP (superset_config.py):**
+
+```python
+AUTH_TYPE = AUTH_LDAP
+AUTH_LDAP_SERVER = 'ldap://ldap.comsatel.com:389'
+AUTH_LDAP_USE_TLS = True
+AUTH_LDAP_SEARCH = 'DC=comsatel,DC=com,DC=pe'
+AUTH_LDAP_BIND_USER = 'CN=svc_superset,OU=Service Accounts,DC=comsatel,DC=com,DC=pe'
+AUTH_LDAP_BIND_PASSWORD = os.environ.get('LDAP_BIND_PASSWORD')
+AUTH_LDAP_UID_FIELD = 'sAMAccountName'
+AUTH_LDAP_FIRSTNAME_FIELD = 'givenName'
+AUTH_LDAP_LASTNAME_FIELD = 'sn'
+AUTH_LDAP_EMAIL_FIELD = 'mail'
+```
+
+**Flujo de Autenticación:**
+1. Usuario accede a `https://bi.comsatel.com`
+2. Redirección a login corporativo (SSO)
+3. Validación contra Active Directory
+4. Superset crea/actualiza usuario automáticamente
+5. Asignación de roles basada en grupos AD (mapeo configurable)
+
+**Auditoría y Compliance:**
+
+**Logs de Superset:**
+
+Ubicación: `/var/log/superset/superset.log`
+
+**Eventos Auditados:**
+- Login/logout de usuarios
+- Creación/edición/eliminación de dashboards
+- Ejecución de queries en SQL Lab
+- Cambios en configuración de Datasets
+- Modificaciones en roles y permisos
+- Exportaciones de datos (CSV/Excel)
+
+**Proceso de Auditoría Trimestral:**
+
+1. Extraer logs de acceso últimos 90 días:
+   ```bash
+   grep "INFO:werkzeug:" /var/log/superset/superset.log | \
+   awk '{print $1, $2, $7}' | sort | uniq -c | sort -rn
+   ```
+
+2. Identificar usuarios inactivos (>90 días sin login)
+
+3. Revocar permisos automáticamente:
+   ```sql
+   -- Query para encontrar usuarios inactivos
+   SELECT username, email, last_login 
+   FROM ab_user 
+   WHERE last_login < NOW() - INTERVAL '90 days';
+   ```
+
+4. Generar reporte de auditoría para Compliance
+
+5. Documentar acciones correctivas en GitLab Issue
+
+**Seguridad y Privacidad de Datos en Superset:**
 
 ![Data Governance](uploads/7f9de016e6ebf50eea40cae80fa6e6e5/image.png)
 
-**Medidas de Protección:**
-- Acceso seguro a datos
-- Cumplimiento de regulaciones
-- Encriptación en tránsito y reposo
-- Gobierno de datos y calidad: Políticas para garantizar privacidad, seguridad, disponibilidad y regulación del ciclo de vida (procesamiento, almacenamiento, recopilación, eliminación)
+**Medidas de Protección Implementadas:**
+
+| Capa | Medida | Implementación |
+|------|--------|----------------|
+| **Acceso** | Autenticación LDAP/SSO | Directorio corporativo centralizado |
+| **Autorización** | Roles personalizados + RLS | Mínimo privilegio por diseño |
+| **Encriptación** | TLS 1.3 en tránsito | Certificado SSL corporativo |
+| **Encriptación** | AES-256 en reposo | Base de datos metadata encriptada |
+| **Auditoría** | Logs completos | Retención 1 año, revisión trimestral |
+| **Backup** | Snapshots diarios | Retención 30 días, offsite weekly |
+| **Compliance** | GDPR/LFPDPPP | Derecho al olvido implementado |
 
 ---
 
-### 3.6 QA, Testing y Documentación Final
+### 4.6 QA, Testing y Documentación Final
 
-#### 3.6.1 Consolidación de Documentación Técnica y Manual de Arquitectura
+#### 4.6.1 Consolidación de Documentación Técnica de Superset
 
 **Descripción:** Generación de documentación entregable completa para cierre de proyecto.
 
-**Documentación Entregable:**
+**Documentación Específica de Superset Entregable:**
 
-| Documento | Formato | Contenido |
-|-----------|---------|-----------|
-| **Manual de Arquitectura** | Markdown (este documento) | Arquitectura actualizada con procedimientos |
-| **Diccionario de Datos** | Excel/CSV | Metadatos completos de todas las tablas, columnas y métricas |
-| **Guía de Usuario "1-Pager"** | PDF visual (1 página) | Enlace de acceso, uso de filtros dinámicos, descarga a Excel/CSV |
-| **Registro de Artefactos** | Tabla versionada | Lista completa de scripts SQL, modelos dbt, dashboards modificados |
+| Documento | Formato | Contenido Específico de Superset |
+|-----------|---------|----------------------------------|
+| **Manual de Arquitectura** | Markdown | Arquitectura Superset + procedimientos |
+| **Diccionario de Datasets** | Excel | Metadatos de todos los Datasets, métricas, filtros RLS |
+| **Guía de Usuario Superset** | PDF 1-pager | Cómo navegar, filtrar, exportar en Superset |
+| **Catálogo de Dashboards** | Wiki GitLab | Lista de dashboards productivos con owners y SLA |
+| **Registro de Configuraciones** | YAML/JSON | Backup de configs de roles, RLS, feature flags |
 
-**Gobierno de Datos y Calidad:**
+**Gobierno de Datasets en Superset:**
 
-Establecer políticas y procedimientos para garantizar calidad de datos y gestión adecuada durante todo el ciclo de vida.
+Establecer políticas para garantizar calidad y consistencia de Datasets durante todo su ciclo de vida.
 
-**Requisitos de Datos:**
-- Privados y seguros
-- Disponibles según SLA acordado
-- Regulados en su ciclo de vida completo
+**Requisitos de Datasets:**
+- **Semántica clara**: Labels descriptivos, descripciones documentadas
+- **Métricas validadas**: Fórmulas aprobadas por business owner
+- **Seguridad aplicada**: RLS configurado según política de accesos
+- **Performance óptima**: Queries <3s en p95
+- **Versionado**: Changes trackeados en GitLab Issues
 
 ---
 
-### 3.7 Entrega Final y Cierre
+### 4.7 Entrega Final, Demo y Cierre de Proyecto Superset
 
-#### 3.7.1 Despliegue Oficial, Demo "Hands-on" y Cierre de Proyecto
+#### 4.7.1 Despliegue Oficial, Demo "Hands-on" en Superset y Cierre
 
-##### 3.7.1.1 Protocolo de Demostración (Demo)
+##### 4.7.1.1 Protocolo de Demostración "Hands-on" en Superset
 
-**Metodología "Hands-on":**
+**Metodología "Hands-on" Específica para Superset:**
 
-**Regla Crítica:** Durante presentación oficial, el Analista **JAMÁS opera el tablero**.
+**Regla Crítica:** El Analista JAMÁS opera Superset durante la demo. El cliente debe interactuar directamente con la plataforma.
 
-**Procedimiento:**
-1. Transferir control (mouse) al cliente interno
-2. Solicitarle resolver duda operativa real: *"Filtra el mes de marzo y dime cuál sucursal tuvo más incidencias"*
-3. Documentar ajustes visuales solicitados para micro-sprint resolutivo
+**Script de Demo Guiada:**
+
+1. **Transferir control:** Compartir pantalla y pasar mouse al cliente
+2. **Escenario real:** "Filtra el mes de marzo y dime cuál sucursal tuvo más incidencias"
+3. **Observar comportamiento:**
+   - ¿El cliente encuentra fácilmente los filtros?
+   - ¿Los charts responden correctamente al cross-filtering?
+   - ¿Los tooltips son comprensibles?
+4. **Documentar feedback:** Capturar ajustes visuales solicitados
+5. **Crear micro-sprint:** Issues en GitLab para cambios menores (<2 días)
 
 **Beneficio:** Destruye barrera del miedo tecnológico y acelera adopción
 
-##### 3.7.1.2 Pase a Producción
+##### 4.7.1.2 Pase a Producción en Superset
 
-**Pre-requisito:** Validación funcional aprobada
+**Checklist Pre-Producción en Superset:**
 
-**Acciones:**
-- Estado del Dashboard cambia formalmente de **"Draft" → "Published"**
-- Asignar políticas RLS definitivas
-- Compartir URL oficial
+- [ ] Dashboard status cambiado de **Draft** → **Published**
+- [ ] RLS configurado y validado con usuarios de test
+- [ ] Roles personalizados asignados correctamente
+- [ ] Caché configurado (Redis/Memcached)
+- [ ] Feature flags revisados (ENABLE_TEMPLATE_PROCESSING, etc.)
+- [ ] URLs oficiales compartidas vía email corporativo
+- [ ] Bookmarks creados para accesos rápidos
+- [ ] Alertas/reportes programados configurados (si aplica)
 
-##### 3.7.1.3 Capacitación y Cierre
+##### 4.7.1.3 Capacitación y Cierre en Superset
 
-**Entregables:**
-- Manual "1-Pager" (ver sección 3.6.1)
-- Épicas y Tareas declaradas como **Done** en GitLab
-- Registro completo de tiempo invertido validado
-- Carta Gantt del proyecto cerrada
+**Entregables de Capacitación:**
 
-#### 3.7.2 Ciclo de Feedback Continuo y Auditoría de Adopción
+1. **Guía Rápida "1-Pager" de Superset:**
+   - URL de acceso: `https://bi.comsatel.com`
+   - Cómo aplicar filtros nativos (sidebar izquierdo)
+   - Cómo usar cross-filtering (clic en charts)
+   - Cómo exportar datos (botón download en charts)
+   - Cómo guardar bookmarks personales
+   - Contacto soporte: bi-soporte@comsatel.com
 
-##### 3.7.2.1 El Ciclo de Feedback Continuo
+2. **Video Tutorial (5 min):** Grabación de navegación básica
 
-**Programación:** Reunión de revisión y calibración agendada proactivamente a los **30 días post-lanzamiento**
+3. **GitLab Closure:**
+   - Épicas marcadas como **Done**
+   - Time tracking completo (`/spend` commands validados)
+   - Carta Gantt cerrada
+   - Lecciones aprendidas documentadas
 
-**Objetivos:**
-- Medir adopción real (revisando logs de Superset)
+#### 4.7.2 Ciclo de Feedback Continuo y Auditoría de Adopción de Superset
+
+##### 4.7.2.1 Monitoreo de Adopción y Feedback en Superset
+
+**Programación:** Reunión de calibración a los **30 días post-lanzamiento**
+
+**Métricas de Adopción en Superset:**
+
+Superset proporciona analytics nativos para medir uso real:
+
+1. **Ir a:** **Settings → Activity Log**
+2. **Filtrar por:** Dashboard específico, rango de fechas
+3. **Métricas clave:**
+   - Número de usuarios únicos (last 30 days)
+   - Frecuencia de acceso (daily/weekly active users)
+   - Charts más consultados
+   - Exportaciones realizadas (CSV/Excel)
+   - Queries lentas identificadas
+
+**Objetivos de la Reunión de Calibración:**
+- Presentar métricas de adopción reales
+- Identificar dashboards subutilizados (<5 usuarios/mes)
 - Levantar requerimientos evolutivos
+- Validar satisfacción del usuario (NPS survey)
 
-**Regla de Nuevo Requerimiento:** Cualquier nueva dimensión analítica compleja constituye **nuevo requerimiento**, detonando inicio formal de nuevo ciclo ágil desde Fase 1 (sección 3.1)
+**Regla de Nuevo Requerimiento:**
+
+Cualquier solicitud de:
+- Nueva dimensión analítica no contemplada inicialmente
+- Métrica adicional con lógica compleja
+- Integración con nueva fuente de datos
+- Dashboard completamente nuevo
+
+...constituye **nuevo proyecto BI**, iniciando ciclo ágil desde Fase 1 (sección 4.1).
+
+**Cambios menores** (ajustes visuales, corrección de labels) se gestionan como bugs en GitLab con prioridad baja.
 
 ---
 
